@@ -1,11 +1,12 @@
 # GymFlow build status — 31 October 2026
 
-## Delivered in this code package (v0.5.0)
+## Delivered in this code package (v0.6.0)
 
 ### Application foundation
 - Next.js 16 App Router, React, TypeScript and Tailwind CSS 4 application structure.
 - Email/password registration and login, PKCE callback, server-side auth claim checks, first-gym onboarding and authenticated multi-tenant workspace shell.
-- Mobile-first dashboard, member directory, membership plans, membership assignment/history, dues, payments, reports, message centre, settings and GymFlow billing pages.
+- Mobile-first dashboard, searchable member directory, membership plans, membership assignment/history, dues, payments, reports, message centre, settings and GymFlow billing pages.
+- Member profile edit and soft archive/restore, with tenant-scoped security-definer RPCs and audit entries (migration `0006_member_management.sql`).
 - Web app manifest and icon. A production service worker, push subscription UI and full offline strategy remain to be added.
 
 ### Gym membership and collections
@@ -28,9 +29,9 @@
 
 ## Verification performed in this workspace
 
-- `npm test` — **25 passed, 0 failed** using Node's built-in test runner.
+- `npm test` — **30 passed, 0 failed** using Node's built-in test runner.
 - `node --check` — all executable JavaScript modules passed.
-- TypeScript/TSX syntax transpilation — **44 files parsed, 0 syntax diagnostics** using the globally installed TypeScript compiler.
+- TypeScript/TSX syntax transpilation — **47 files parsed, 0 syntax diagnostics** using the globally installed TypeScript compiler.
 - Full dependency-backed `tsc --noEmit` and `next build` were not run: dependencies are not installed in this workspace. An earlier dependency installation attempt timed out while reaching the npm registry.
 - PostgreSQL migrations were not executed against a live Supabase database and have not received a live integration test. Static SQL contract tests are not a substitute for running migrations in staging.
 - Razorpay and Meta API tests use local provider mocks; no real merchant accounts or approved WhatsApp templates were connected.
@@ -46,4 +47,8 @@
 7. Implement service worker/offline behavior and optional web push; test iOS Safari and Android Chrome.
 8. Perform backup/restore, monitoring, privacy/retention, incident response, customer support and production deployment drills.
 
-**Status: development foundation delivered; not production-ready.** No live service has been configured or deployed from this package.
+Additional performance work: these changes reduce avoidable request round trips and improve perceived navigation feedback. They have not been benchmarked against the live Vercel/Supabase deployment; confirm using browser DevTools and real-device tests.
+
+Still pending: refunds/credit notes/GST invoices, complete subscription lifecycle/dunning and entitlement enforcement, plan/product administration, secure data export, production scheduler setup and full offline/PWA push support.
+
+**Status: development build delivered; not production-ready.** No live service has been configured or deployed from this package.

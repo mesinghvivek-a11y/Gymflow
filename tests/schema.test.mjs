@@ -29,5 +29,25 @@ test('paid advance renewal cancels and suppresses reminders for the previous ter
 test('there is one canonical initial schema migration and later migrations are uniquely ordered',()=>{
   const names=readdirSync(dir).filter(f=>f.endsWith('.sql')).sort();
   assert.equal(names.filter(f=>f.startsWith('0001_')).length,1);
-  assert.deepEqual(names.map(f=>f.slice(0,4)),['0001','0002','0003','0004','0005']);
+  assert.deepEqual(names.map(f=>f.slice(0,4)),['0001','0002','0003','0004','0005','0006']);
+});
+
+
+test('member edits and archive/restore use tenant-scoped audited server functions',()=>{
+  const members=migrations.find((sql)=>sql.includes('create or replace function public.update_member_for_gym'))??'';
+  assert.match(members,/current_user_has_gym_role\(target_gym,array\['owner','manager','staff'\]\)/);
+  assert.match(members,/where gym_id=target_gym and id=target_member/);
+  assert.match(members,/member\.updated/);
+  assert.match(members,/member\.archived/);
+  assert.match(members,/member\.restored/);
+  assert.match(members,/security definer[\s\S]*set row_security=off/i);
+  assert.match(members,/revoke all on function public\.update_member_for_gym/);
+});
+
+test('dues RPC includes member directory fields to avoid a second read',()=>{
+  const memberManagement=migrations.find((sql)=>sql.includes('Return member fields with due memberships'))??'';
+  assert.match(memberManagement,/drop function public\.gym_membership_dues/);
+  assert.match(memberManagement,/member_number char\(5\)/);
+  assert.match(memberManagement,/member_name text/);
+  assert.match(memberManagement,/phone_e164 text/);
 });

@@ -1,10 +1,10 @@
 # GymFlow — Gym Membership & Operations SaaS
 
-**Version:** 0.5.0 foundation build  
+**Version:** 0.6.0 performance and member-management build  
 **Initial market:** India  
 **Primary currency:** INR (all stored amounts are integer paise)
 
-GymFlow is a mobile-first gym operations web app with a PWA manifest foundation. This repository contains the application source, PostgreSQL/Supabase migrations, integration routes and test suite. Service worker/offline support and push notifications are not yet complete. It has **not been connected to a live Supabase, Razorpay or Meta account** and is not certified for production financial operation.
+GymFlow is a mobile-first gym operations web app with a PWA manifest foundation. This repository contains the application source, PostgreSQL/Supabase migrations, integration routes and test suite. Service worker/offline support and push notifications are not yet complete. This build adds route loading feedback, navigation prefetching and request-scoped workspace data reuse, but no live latency benchmark has been run. This package contains no live service credentials and has not been validated against your live Supabase, Razorpay or Meta accounts; it is not certified for production financial operation.
 
 ## Stack
 
@@ -13,7 +13,7 @@ GymFlow is a mobile-first gym operations web app with a PWA manifest foundation.
 - Supabase Auth, PostgreSQL, Row Level Security and Storage-ready schema
 - Razorpay Payment Links, per-gym merchant credentials, signed webhooks and a protected worker
 - Official WhatsApp Business Cloud API, per-gym account credentials, consent tracking and reminder worker
-- Vercel Cron-compatible worker endpoints
+- Protected background worker endpoints; the Hobby-compatible deployment manifest does not schedule per-minute Vercel Cron jobs. Configure an external scheduler for production reminders and payment-event processing.
 
 These are stable package versions, not canary builds. Check the current release notes before upgrading: Next.js 16.4.3 was released on 23 October 2026; React 19.3.1 and Supabase JS 2.118.0 are the stable package versions pinned by this build. [Next.js release history](https://github.com/vercel/next.js/releases/) · [React releases](https://github.com/facebook/react/releases) · [Supabase JS releases](https://github.com/supabase/supabase-js/releases)
 
@@ -22,11 +22,12 @@ These are stable package versions, not canary builds. Check the current release 
 ### Gym operations
 - Email/password registration, sign-in, PKCE auth callback and server-verified session claims.
 - First-gym onboarding with a server-side database RPC that creates the gym, owner membership and counters atomically.
-- Mobile-first dashboard, member directory, plan catalogue, membership assignment/history, dues, payments, reports, message centre and integration settings.
+- Mobile-first dashboard, searchable member directory with edit/archive/restore, plan catalogue, membership assignment/history, dues, payments, reports, message centre and integration settings.
 - Five-digit member IDs allocated in a per-gym database counter, protected by a row lock and uniqueness constraint. IDs are never recycled.
 - Membership plan snapshots, month-based and day-based durations, advance renewal from the existing expiry instant, and selectable start date for a new/expired term.
 - Invoice creation, manual cash/offline-UPI/bank payments, partial allocations and invoice balance controls in database transactions.
 - Idempotency keys on member creation, membership assignment, manual payment and payment-link requests.
+- Member search is local and immediate for the latest 500 loaded records; profile updates and archive/restore use tenant-scoped audited database functions.
 
 ### Gym payment integration
 - Each gym connects its own Razorpay account; credentials are encrypted at rest with AES-256-GCM.
@@ -56,7 +57,7 @@ These are stable package versions, not canary builds. Check the current release 
 ```text
 GymFlow/
   src/app/                 Next.js pages, API routes, PWA manifest
-  src/components/          Workspace navigation and brand components
+  src/components/          Workspace navigation, member directory and form feedback components
   src/domain/              Pure money, membership, phone and timezone rules
   src/lib/                 Supabase clients, workspace auth, secret vault
   src/server/actions/      Validated server actions
@@ -78,7 +79,7 @@ Requires Node.js 22 or newer and npm.
 1. Create a new Supabase project. Do not use a database that already contains another live GymFlow installation unless you first prepare a reviewed forward migration.
 2. Copy `.env.example` to `.env.local`.
 3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_APP_URL`.
-4. In Supabase SQL Editor, apply the five migrations in numeric order, once, to the fresh project:
+4. In Supabase SQL Editor, apply the six migrations in numeric order, once, to the fresh project:
 
    ```text
    0001_core.sql
@@ -86,6 +87,7 @@ Requires Node.js 22 or newer and npm.
    0003_razorpay_gateway.sql
    0004_whatsapp_reminders.sql
    0005_platform_billing_and_entitlements.sql
+   0006_member_management.sql
    ```
 
 5. In Supabase Auth → URL Configuration, set the local Site URL to `http://localhost:3000` and add `http://localhost:3000/auth/callback` to allowed redirect URLs. Add production URLs when deploying.
