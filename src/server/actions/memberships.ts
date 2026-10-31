@@ -1,0 +1,8 @@
+"use server";
+import {revalidatePath} from "next/cache";
+import {redirect} from "next/navigation";
+import {z} from "zod";
+import {requireActiveGym} from "@/lib/workspace";
+const schema=z.object({memberId:z.string().uuid(),planId:z.string().uuid(),startDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),requestKey:z.string().uuid()});
+export async function createMembershipAction(formData:FormData){const p=schema.safeParse({memberId:formData.get("member_id"),planId:formData.get("plan_id"),startDate:formData.get("start_date")||"",requestKey:formData.get("request_key")});if(!p.success) redirect("/app/memberships?error=invalid");const {supabase,gym}=await requireActiveGym();const {error}=await supabase.rpc("create_membership_for_gym",{target_gym:gym.id,target_member:p.data.memberId,target_plan:p.data.planId,selected_start_date:p.data.startDate||null,request_key:p.data.requestKey});if(error) redirect(`/app/memberships?error=${error.message.includes("pending_membership_exists")?"pending_exists":"create"}`);revalidatePath("/app/memberships");revalidatePath("/app/dues");revalidatePath("/app");redirect("/app/memberships?created=1");}
+export async function voidPendingMembershipAction(formData:FormData){const id=z.string().uuid().safeParse(formData.get("membership_id"));if(!id.success) redirect("/app/memberships?error=invalid");const {supabase,gym}=await requireActiveGym();const {error}=await supabase.rpc("void_pending_membership_for_gym",{target_gym:gym.id,target_membership:id.data});if(error) redirect(`/app/memberships?error=${error.message.includes("membership_has_payments")?"has_payments":"void"}`);revalidatePath("/app/memberships");revalidatePath("/app/dues");redirect("/app/memberships?voided=1");}

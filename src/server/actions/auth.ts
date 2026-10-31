@@ -1,0 +1,6 @@
+"use server";
+import {redirect} from "next/navigation";
+import {createClient} from "@/lib/supabase/server";
+export async function loginAction(formData:FormData){const email=String(formData.get("email")??"").trim().toLowerCase();const password=String(formData.get("password")??"");if(!email||!password) redirect("/login?error=invalid");const supabase=await createClient();const {error}=await supabase.auth.signInWithPassword({email,password});if(error) redirect("/login?error=credentials");redirect("/app");}
+export async function registerAction(formData:FormData){const name=String(formData.get("name")??"").trim();const email=String(formData.get("email")??"").trim().toLowerCase();const password=String(formData.get("password")??"");if(name.length<2||!email||password.length<10) redirect("/register?error=invalid");const supabase=await createClient();const {error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:`${(process.env.NEXT_PUBLIC_APP_URL||"http://localhost:3000").replace(/\/$/,"")}/auth/callback?next=/onboarding`}});if(error) redirect("/register?error=failed");redirect("/login?registered=1");}
+export async function signOutAction(){const supabase=await createClient();await supabase.auth.signOut();redirect("/login");}

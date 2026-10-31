@@ -1,0 +1,6 @@
+{
+  "crons": [
+    {"path":"/api/internal/workers/razorpay","schedule":"* * * * *"},
+    {"path":"/api/internal/workers/whatsapp","schedule":"* * * * *"}
+  ]
+}
